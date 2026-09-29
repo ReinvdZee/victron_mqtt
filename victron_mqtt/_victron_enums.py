@@ -152,6 +152,7 @@ class DeviceType(VictronDeviceEnum):
         "DC/DC charger",
         "Identifies the DC/DC charger MQTT and D-Bus service type.",
     )  # Orion XS 1400 in battery to battery charging mode.
+    DCGENSET = ("dcgenset", "dcgenset", "DC genset", "Identifies the DC genset MQTT and D-Bus service type.")
 
 
 class VictronProductId(VictronEnum):
