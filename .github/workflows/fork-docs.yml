@@ -1,5 +1,6 @@
 # Fork-only: builds the topic documentation page and deploys it to this fork's GitHub Pages.
 # Runs on pushes to main, or manually (Actions > Fork docs > Run workflow) for any branch, tag or SHA.
+# Also generates docs/dbus.html (paths per service, structured like the Venus OS D-Bus wiki) with .github/fork-docs/.
 name: Fork docs
 
 on:
@@ -43,6 +44,17 @@ jobs:
         run: |
           mkdir -p docs/_data
           cp victron_mqtt.json docs/_data/victron_mqtt.json
+      # Fork-only page generators live on this workflow's own commit, not on the ref being built.
+      - name: Check out fork docs tools
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: fork-tools
+          sparse-checkout: .github/fork-docs
+      - name: Generate D-Bus paths page
+        run: >
+          python fork-tools/.github/fork-docs/build_dbus_page.py victron_mqtt.json docs/dbus.html
+          --ref "${{ inputs.ref || github.ref_name }}" --sha "$(git rev-parse HEAD)"
       - name: Setup Pages
         uses: actions/configure-pages@v6
       - name: Build with Jekyll
