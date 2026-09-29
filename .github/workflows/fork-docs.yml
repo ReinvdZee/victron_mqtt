@@ -1,0 +1,65 @@
+# Fork-only: builds the topic documentation page and deploys it to this fork's GitHub Pages.
+# Runs on pushes to main, or manually (Actions > Fork docs > Run workflow) for any branch, tag or SHA.
+name: Fork docs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or SHA to build the docs from"
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: fork-docs
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository != 'tomer-w/victron_mqtt'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the requested ref
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Install library
+        run: pip install -e .
+      - name: Generate victron_mqtt.json
+        run: python -m victron_mqtt.utils.dump_victron_mqtt victron_mqtt.json
+      - name: Copy victron_mqtt.json to docs/_data
+        run: |
+          mkdir -p docs/_data
+          cp victron_mqtt.json docs/_data/victron_mqtt.json
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
